@@ -1,0 +1,144 @@
+Enter file c<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Sheets Data Table</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 80%;
+            margin: 20px auto;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden; /* for rounded corners of the table */
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f0f0f0;
+            color: #333;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        /* Style for the message container */
+        #message-container {
+            position: fixed; /* Fix the position, so it doesn't scroll */
+            top: 10px;      /* Adjust as needed */
+            left: 50%;     /* Center horizontally initially */
+            transform: translateX(-50%); /* Precise centering */
+            background-color: #e0f7fa; /* Light blue background */
+            color: #00838f;             /* Darker teal text */
+            padding: 10px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 1000; /* Ensure it's above other elements */
+            opacity: 0;      /* Start with 0 opacity */
+            transition: opacity 0.3s ease-in-out, top 0.3s ease-in-out; /* Smooth transition */
+            white-space: nowrap; /* Prevent wrapping, keep on one line */
+        }
+
+        #message-container.show {
+            opacity: 1;
+            top: 20px; /* Move it down when shown */
+        }
+
+        #message-container.error {
+            background-color: #ffe082; /* Light yellow for errors */
+            color: #d32f2f;             /* Darker red for error text */
+        }
+
+    </style>
+</head>
+<body>
+    <table id="data-table">
+        <thead>
+            <tr></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div id="message-container"></div>
+
+    <script>
+        const spreadsheetId = '1qN19ZzqsqpNftA1hbShv3JShijAIPQ5hwFpkbUgIsVU'; // Replace with your spreadsheet ID.
+        const sheetName = 'Sheet1';                 // Replace with the name of your sheet.
+        const dataTable = document.getElementById('data-table');
+        const messageContainer = document.getElementById('message-container');
+
+        // Function to display messages
+        function showMessage(message, type = 'success') {
+            messageContainer.textContent = message;
+            messageContainer.className = 'show';
+            if (type === 'error') {
+                messageContainer.classList.add('error');
+            }
+            setTimeout(() => {
+                messageContainer.className = ''; // Remove 'show' to hide
+                messageContainer.classList.remove('error'); // remove error class
+            }, 3000); // 3 seconds
+        }
+
+        function fetchData() {
+            const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tq=SELECT%20*%20WHERE%20A%20IS%20NOT%20NULL&sheet=${sheetName}&headers=1`;
+
+            fetch(url)
+                .then(response => response.text())
+                .then(data => {
+                    const jsonData = JSON.parse(data.substring(47).slice(0, -2)); // Remove leading and trailing garbage
+                    processData(jsonData);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    showMessage('Failed to fetch data. Please check your connection and spreadsheet ID.', 'error');
+                });
+        }
+
+
+        function processData(jsonData) {
+            const headers = jsonData.table.cols.map(col => col.label);
+            const rows = jsonData.table.rows;
+
+            // Clear existing table content
+            dataTable.querySelector('thead tr').innerHTML = '';
+            dataTable.querySelector('tbody').innerHTML = '';
+
+            // Populate table header
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                dataTable.querySelector('thead tr').appendChild(th);
+            });
+
+            // Populate table rows
+            rows.forEach(row => {
+                const tr = document.createElement('tr');
+                const values = row.c.map(cell => cell ? cell.v : ''); // Handle null cells
+                values.forEach(value => {
+                    const td = document.createElement('td');
+                    td.textContent = value;
+                    tr.appendChild(td);
+                });
+                dataTable.querySelector('tbody').appendChild(tr);
+            });
+            showMessage('Data successfully loaded and table updated!');
+        }
+
+        // Fetch data on page load and then every 5 seconds
+        fetchData();
+        setInterval(fetchData, 5000); //refresh every 5 seconds
+    </script>
+</body>
+</html>
+ontents here
